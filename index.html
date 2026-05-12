@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<title>Scanner Kupon Kurban</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Mono:wght@700&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --brand:#1B6CA8;--brand-light:#EBF4FF;
+  --green:#16A34A;--green-bg:#F0FDF4;
+  --red:#DC2626;--red-bg:#FEF2F2;
+  --amber:#D97706;--amber-bg:#FFFBEB;
+  --gray-50:#F9FAFB;--gray-100:#F3F4F6;--gray-200:#E5E7EB;
+  --gray-400:#9CA3AF;--gray-500:#6B7280;--gray-900:#111827;
+}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gray-50);min-height:100vh}
+.topbar{background:#fff;border-bottom:1px solid var(--gray-200);height:56px;display:flex;align-items:center;padding:0 20px;gap:12px;position:sticky;top:0;z-index:100}
+.topbar-title{font-weight:800;font-size:16px;color:var(--gray-900)}
+.topbar-sub{font-size:12px;color:var(--gray-400)}
+.wrap{max-width:480px;margin:0 auto;padding:16px;display:flex;flex-direction:column;gap:14px}
+
+/* Counter */
+.counter-card{background:var(--brand);border-radius:14px;padding:16px 20px;color:#fff;display:flex;align-items:center;justify-content:space-between}
+.counter-label{font-size:11px;font-weight:600;opacity:.75;text-transform:uppercase;letter-spacing:.5px}
+.counter-val{font-size:28px;font-weight:800;margin-top:2px}
+
+/* Petugas */
+.petugas-card{background:#fff;border:1px solid var(--gray-200);border-radius:14px;padding:14px 18px;display:flex;align-items:center;gap:12px}
+.petugas-input{flex:1;padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;font-family:inherit;outline:none;transition:.15s}
+.petugas-input:focus{border-color:var(--brand)}
+
+/* Scan card */
+.scan-card{background:#fff;border:1px solid var(--gray-200);border-radius:14px;overflow:hidden}
+.scan-card-header{padding:14px 18px;border-bottom:1px solid var(--gray-200);display:flex;align-items:center;gap:10px}
+.scan-icon{width:36px;height:36px;background:var(--brand-light);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.scan-title{font-weight:700;font-size:14px}
+.scan-sub{font-size:11px;color:var(--gray-400)}
+.scan-body{padding:18px}
+.input-row{display:flex;gap:10px}
+.kode-input{flex:1;padding:12px 14px;border:2px solid var(--gray-200);border-radius:10px;font-size:15px;font-family:'Space Mono',monospace;font-weight:700;letter-spacing:2px;color:var(--gray-900);outline:none;text-transform:uppercase;transition:.15s}
+.kode-input:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(27,108,168,.1)}
+.kode-input::placeholder{font-family:'Plus Jakarta Sans',sans-serif;font-weight:400;letter-spacing:0;font-size:13px;color:var(--gray-400)}
+.btn-validasi{padding:12px 18px;background:var(--brand);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;transition:.15s}
+.btn-validasi:hover{background:#1558a0}
+.btn-validasi:disabled{opacity:.5;cursor:not-allowed}
+
+/* OR divider */
+.or-divider{display:flex;align-items:center;gap:12px;padding:0 18px 14px}
+.or-divider::before,.or-divider::after{content:'';flex:1;height:1px;background:var(--gray-200)}
+.or-divider span{font-size:11px;font-weight:600;color:var(--gray-400)}
+
+/* Camera */
+.cam-section{padding:0 18px 18px}
+.cam-btn{width:100%;padding:11px;border-radius:10px;background:var(--gray-100);border:1.5px dashed var(--gray-300);cursor:pointer;font-size:13px;font-weight:600;color:var(--gray-500);font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;transition:.15s}
+.cam-btn:hover{background:var(--gray-200)}
+.cam-btn.active{background:var(--brand-light);border-color:var(--brand);color:var(--brand)}
+.cam-btn:disabled{opacity:.5;cursor:not-allowed}
+#video-wrap{margin-top:12px;border-radius:12px;overflow:hidden;display:none;position:relative;background:#000}
+#video-wrap.show{display:block}
+#scanner-video{width:100%;display:block;max-height:300px;object-fit:cover}
+#scan-canvas{display:none}
+.scan-line{position:absolute;left:10%;right:10%;height:2px;background:var(--brand);animation:scanLine 2s linear infinite;opacity:.8;border-radius:2px;box-shadow:0 0 6px var(--brand)}
+@keyframes scanLine{0%{top:15%}50%{top:80%}100%{top:15%}}
+.scan-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.scan-frame{width:200px;height:200px;border:3px solid rgba(27,108,168,.6);border-radius:12px;box-shadow:0 0 0 1000px rgba(0,0,0,.3)}
+.cam-status{font-size:11px;color:var(--gray-400);text-align:center;margin-top:8px;min-height:16px}
+
+/* Result */
+.result-card{border-radius:14px;overflow:hidden;border:2px solid transparent;display:none}
+.result-card.show{display:block}
+.result-card.valid{border-color:var(--green);background:var(--green-bg)}
+.result-card.invalid{border-color:var(--red);background:var(--red-bg)}
+.result-card.taken{border-color:var(--amber);background:var(--amber-bg)}
+.result-header{padding:14px 18px;display:flex;align-items:center;gap:12px}
+.result-status-icon{font-size:28px}
+.result-status-title{font-size:15px;font-weight:800}
+.result-status-sub{font-size:12px;margin-top:2px}
+.result-card.valid .result-status-title{color:var(--green)}
+.result-card.invalid .result-status-title{color:var(--red)}
+.result-card.taken .result-status-title{color:var(--amber)}
+.result-body{background:#fff;border-top:1px solid rgba(0,0,0,.06);padding:14px 18px}
+.result-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.result-field{display:flex;flex-direction:column;gap:3px}
+.result-field.full{grid-column:1/-1}
+.result-field-label{font-size:10px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:.4px}
+.result-field-val{font-size:14px;font-weight:700;color:var(--gray-900)}
+.kode-chip{font-family:'Space Mono',monospace;font-size:12px;background:var(--brand-light);color:var(--brand);padding:3px 8px;border-radius:6px;letter-spacing:1px}
+.result-footer{padding:10px 18px;border-top:1px solid rgba(0,0,0,.04);display:flex;justify-content:flex-end}
+.btn-reset{padding:8px 18px;background:#fff;border:1.5px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit}
+.btn-reset:hover{background:var(--gray-100)}
+
+/* Loading overlay */
+.loading{display:none;position:fixed;inset:0;background:rgba(255,255,255,.8);z-index:999;align-items:center;justify-content:center;flex-direction:column;gap:12px}
+.loading.show{display:flex}
+.spinner{width:40px;height:40px;border:4px solid var(--gray-200);border-top-color:var(--brand);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <span style="font-size:22px">📷</span>
+  <div>
+    <div class="topbar-title">Scanner Kupon Kurban</div>
+    <div class="topbar-sub" id="topbar-sub">Menghubungkan ke sistem…</div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="counter-card">
+    <div>
+      <div class="counter-label">Total Validasi Sesi Ini</div>
+      <div class="counter-val" id="counter">0</div>
+    </div>
+    <span style="font-size:36px;opacity:.5">✅</span>
+  </div>
+
+  <div class="petugas-card">
+    <span style="font-size:22px">👤</span>
+    <div style="flex:1">
+      <div style="font-size:11px;font-weight:600;color:var(--gray-400);margin-bottom:4px">NAMA PETUGAS</div>
+      <input class="petugas-input" id="petugas-input" type="text" placeholder="Masukkan nama petugas…"/>
+    </div>
+  </div>
+
+  <div class="scan-card">
+    <div class="scan-card-header">
+      <div class="scan-icon">🔍</div>
+      <div>
+        <div class="scan-title">Validasi Kupon</div>
+        <div class="scan-sub">Scan QR atau input kode manual</div>
+      </div>
+    </div>
+
+    <div class="scan-body">
+      <div class="input-row">
+        <input class="kode-input" id="kode-input" type="text" placeholder="KRB-XXXXXX" maxlength="10"
+          oninput="this.value=this.value.toUpperCase()"
+          onkeydown="if(event.key==='Enter')validasi()"/>
+        <button class="btn-validasi" id="btn-val" onclick="validasi()">Cek ✓</button>
+      </div>
+    </div>
+
+    <div class="or-divider"><span>atau scan kamera</span></div>
+
+    <div class="cam-section">
+      <button class="cam-btn" id="cam-btn" onclick="toggleCamera()">
+        <span>📸</span> Aktifkan Kamera
+      </button>
+      <div id="video-wrap">
+        <video id="scanner-video" playsinline autoplay muted></video>
+        <canvas id="scan-canvas"></canvas>
+        <div class="scan-overlay">
+          <div class="scan-frame"></div>
+        </div>
+        <div class="scan-line"></div>
+      </div>
+      <div class="cam-status" id="cam-status"></div>
+    </div>
+  </div>
+
+  <div class="result-card" id="result-card">
+    <div class="result-header">
+      <div class="result-status-icon" id="res-icon"></div>
+      <div>
+        <div class="result-status-title" id="res-title"></div>
+        <div class="result-status-sub" id="res-sub"></div>
+      </div>
+    </div>
+    <div class="result-body" id="res-body"></div>
+    <div class="result-footer">
+      <button class="btn-reset" onclick="resetScan()">🔄 Scan Berikutnya</button>
+    </div>
+  </div>
+</div>
+
+<div class="loading" id="loading">
+  <div class="spinner"></div>
+  <div style="font-size:13px;font-weight:600;color:var(--gray-500)">Memvalidasi kupon…</div>
+</div>
+
+<script>
+// ══ KONFIGURASI — GANTI URL INI ══════════════════════════════
+const GAS_URL = 'GANTI_URL_GAS_ANDA';
+// Contoh: 'https://script.google.com/macros/s/AKfy.../exec'
+// ═════════════════════════════════════════════════════════════
+
+let scanCount   = 0;
+let cameraActive = false;
+let videoStream  = null;
+let scanInterval = null;
+let scanCooldown = false;
+let detector     = null;
+
+// ── CEK KONEKSI GAS ──────────────────────────────────────────
+async function cekKoneksi() {
+  try {
+    const r = await fetchGAS({ action: 'ping' });
+    document.getElementById('topbar-sub').textContent = '✅ Terhubung ke sistem';
+  } catch(e) {
+    document.getElementById('topbar-sub').textContent = '⚠️ Periksa koneksi internet';
+  }
+}
+
+// ── FETCH KE GAS (JSONP/fetch) ────────────────────────────────
+async function fetchGAS(params) {
+  const url = new URL(GAS_URL);
+  Object.keys(params).forEach(k => url.searchParams.set(k, params[k]));
+  const res = await fetch(url.toString(), { redirect: 'follow' });
+  return res.json();
+}
+
+// ── VALIDASI ─────────────────────────────────────────────────
+async function validasi(kodeOverride) {
+  const raw  = kodeOverride || document.getElementById('kode-input').value;
+  const kode = raw.trim().toUpperCase();
+  if (!kode) { shakeInput(); return; }
+
+  const match = kode.match(/KRB-[A-Z0-9]{6}/);
+  const finalKode = match ? match[0] : kode;
+  if (!finalKode) { shakeInput(); return; }
+
+  const petugas = document.getElementById('petugas-input').value.trim() || 'Petugas';
+  const btn = document.getElementById('btn-val');
+  btn.disabled = true; btn.textContent = '…';
+  document.getElementById('loading').classList.add('show');
+
+  try {
+    const url = GAS_URL + '?action=validasi&kode=' + encodeURIComponent(finalKode) + '&petugas=' + encodeURIComponent(petugas);
+    const res  = await fetch(url, { redirect: 'follow' });
+    const data = await res.json();
+    showResult(data);
+    if (data.success) {
+      scanCount++;
+      document.getElementById('counter').textContent = scanCount;
+      document.getElementById('kode-input').value = '';
+      vibrateDevice(100);
+      if (cameraActive) scanCooldown = true, setTimeout(() => scanCooldown = false, 3000);
+    } else vibrateDevice(300);
+  } catch(e) {
+    showResult({ success: false, status: 'ERROR', message: 'Gagal terhubung ke server: ' + e.message });
+  } finally {
+    btn.disabled = false; btn.textContent = 'Cek ✓';
+    document.getElementById('loading').classList.remove('show');
+  }
+}
+
+// ── SHOW RESULT ───────────────────────────────────────────────
+function showResult(r) {
+  const card  = document.getElementById('result-card');
+  card.className = 'result-card show';
+  const icon  = document.getElementById('res-icon');
+  const title = document.getElementById('res-title');
+  const sub   = document.getElementById('res-sub');
+  const body  = document.getElementById('res-body');
+
+  if (r.status === 'VALID') {
+    card.classList.add('valid');
+    icon.textContent = '✅'; title.textContent = 'KUPON VALID'; sub.textContent = r.message;
+    body.innerHTML = wargaInfo(r.warga);
+  } else if (r.status === 'ALREADY_TAKEN') {
+    card.classList.add('taken');
+    icon.textContent = '⚠️'; title.textContent = 'SUDAH DIAMBIL'; sub.textContent = r.message;
+    body.innerHTML = wargaInfo(r.warga, r.log ? 'Diambil: ' + r.log.waktu + ' oleh ' + r.log.petugas : '');
+  } else if (r.status === 'NOT_FOUND') {
+    card.classList.add('invalid');
+    icon.textContent = '❌'; title.textContent = 'TIDAK DITEMUKAN'; sub.textContent = r.message;
+    body.innerHTML = '<p style="font-size:13px;color:var(--gray-500)">Kode tidak terdaftar di sistem.</p>';
+  } else {
+    card.classList.add('invalid');
+    icon.textContent = '⚠️'; title.textContent = 'ERROR'; sub.textContent = r.message || 'Kesalahan sistem.';
+    body.innerHTML = '';
+  }
+  card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function wargaInfo(w, extra) {
+  if (!w) return '';
+  return `<div class="result-grid">
+    <div class="result-field full"><div class="result-field-label">Nama</div><div class="result-field-val">${w.nama}</div></div>
+    <div class="result-field"><div class="result-field-label">Alamat</div><div class="result-field-val" style="font-size:12px">${w.alamat||'-'}</div></div>
+    <div class="result-field"><div class="result-field-label">RT / RW</div><div class="result-field-val">RT ${w.rt||'-'} / RW ${w.rw||'-'}</div></div>
+    <div class="result-field"><div class="result-field-label">Kode Kupon</div><div class="result-field-val"><span class="kode-chip">${w.kodeKupon}</span></div></div>
+    <div class="result-field"><div class="result-field-label">Jumlah Bagian</div><div class="result-field-val">${w.jumlahBagian} Bagian</div></div>
+    ${extra ? `<div class="result-field full"><div class="result-field-label">Info</div><div class="result-field-val" style="font-size:12px;color:var(--amber)">${extra}</div></div>` : ''}
+  </div>`;
+}
+
+function resetScan() {
+  document.getElementById('result-card').className = 'result-card';
+  document.getElementById('kode-input').value = '';
+  document.getElementById('kode-input').focus();
+}
+
+function shakeInput() {
+  const el = document.getElementById('kode-input');
+  el.style.borderColor = 'var(--red)';
+  setTimeout(() => el.style.borderColor = '', 800);
+}
+
+// ── KAMERA ────────────────────────────────────────────────────
+function toggleCamera() { cameraActive ? stopCamera() : startCamera(); }
+
+async function startCamera() {
+  const btn  = document.getElementById('cam-btn');
+  const wrap = document.getElementById('video-wrap');
+  btn.disabled = true; btn.innerHTML = '⏳ Memulai kamera…';
+  document.getElementById('cam-status').textContent = '';
+
+  try {
+    videoStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
+      audio: false
+    });
+  } catch(err) {
+    btn.disabled = false;
+    btn.innerHTML = '<span>📸</span> Aktifkan Kamera';
+    const msg = {
+      NotAllowedError  : '❌ Izin kamera ditolak. Ketuk ikon kunci di address bar → izinkan Kamera.',
+      NotFoundError    : '❌ Kamera tidak ditemukan.',
+      NotReadableError : '❌ Kamera dipakai aplikasi lain.',
+    };
+    document.getElementById('cam-status').textContent = msg[err.name] || '❌ ' + err.message;
+    return;
+  }
+
+  const video = document.getElementById('scanner-video');
+  video.srcObject = videoStream;
+  try { await video.play(); } catch(e) {}
+
+  wrap.classList.add('show');
+  btn.disabled  = false;
+  btn.className = 'cam-btn active';
+  btn.innerHTML = '<span>🛑</span> Hentikan Kamera';
+  cameraActive  = true;
+
+  // Pilih metode decode terbaik
+  if ('BarcodeDetector' in window) {
+    document.getElementById('cam-status').textContent = '🟢 Auto-scan aktif (BarcodeDetector)';
+    startBarcodeDetector(video);
+  } else {
+    document.getElementById('cam-status').textContent = '🟡 Arahkan QR Code ke kamera';
+    startCanvasDecode(video);
+  }
+}
+
+// Metode 1: BarcodeDetector API (Chrome Android)
+function startBarcodeDetector(video) {
+  try {
+    detector = new BarcodeDetector({ formats: ['qr_code'] });
+    scanInterval = setInterval(async () => {
+      if (!cameraActive || scanCooldown) return;
+      try {
+        const codes = await detector.detect(video);
+        if (codes.length > 0) onQRDetected(codes[0].rawValue);
+      } catch(e) {}
+    }, 300);
+  } catch(e) { startCanvasDecode(video); }
+}
+
+// Metode 2: Canvas decode (fallback)
+function startCanvasDecode(video) {
+  const canvas = document.getElementById('scan-canvas');
+  const ctx    = canvas.getContext('2d', { willReadFrequently: true });
+  scanInterval = setInterval(() => {
+    if (!cameraActive || scanCooldown || video.readyState < 2) return;
+    const w = video.videoWidth, h = video.videoHeight;
+    if (!w || !h) return;
+    canvas.width = w; canvas.height = h;
+    ctx.drawImage(video, 0, 0, w, h);
+    // Canvas tersedia untuk decode eksternal jika diperlukan
+  }, 500);
+}
+
+function onQRDetected(raw) {
+  if (scanCooldown) return;
+  const kode  = raw.trim().toUpperCase();
+  const match = kode.match(/KRB-[A-Z0-9]{6}/);
+  const final = match ? match[0] : kode;
+  if (!final) return;
+
+  scanCooldown = true;
+  vibrateDevice(80);
+  document.getElementById('kode-input').value = final;
+  document.getElementById('cam-status').textContent = '✅ QR terdeteksi: ' + final;
+
+  const wrap = document.getElementById('video-wrap');
+  wrap.style.outline = '4px solid #16A34A';
+  setTimeout(() => { wrap.style.outline = ''; }, 600);
+
+  validasi(final);
+  setTimeout(() => {
+    scanCooldown = false;
+    document.getElementById('cam-status').textContent = '🟢 Auto-scan aktif (BarcodeDetector)';
+  }, 3000);
+}
+
+function stopCamera() {
+  clearInterval(scanInterval); scanInterval = null; detector = null;
+  if (videoStream) { videoStream.getTracks().forEach(t => t.stop()); videoStream = null; }
+  const video = document.getElementById('scanner-video');
+  video.srcObject = null;
+  document.getElementById('video-wrap').classList.remove('show');
+  document.getElementById('cam-status').textContent = '';
+  const btn = document.getElementById('cam-btn');
+  btn.className = 'cam-btn';
+  btn.innerHTML = '<span>📸</span> Aktifkan Kamera';
+  cameraActive = false;
+}
+
+function vibrateDevice(ms) { try { navigator.vibrate && navigator.vibrate(ms); } catch(e) {} }
+
+document.getElementById('kode-input').focus();
+cekKoneksi();
+</script>
+</body>
+</html>
